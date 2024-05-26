@@ -1,0 +1,36 @@
+FROM php:7.4-cli AS builder
+
+WORKDIR /var/www
+
+# Atualizando debian e instalando a extensão ZIP
+# docker-php-ext-install zip -> Peculiaridade dessa imagem do PHP para instalar facilmente extensões
+RUN apt-get update && \
+    apt-get install libzip-dev -y && \
+    docker-php-ext-install zip
+
+# Instalando Composer
+RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" && \
+    php composer-setup.php && \
+    php -r "unlink('composer-setup.php');"
+
+# Instalando laravel
+RUN php composer.phar create-project laravel/laravel laravel
+
+# ENTRYPOINT
+
+ENTRYPOINT [ "php", "laravel/artisan", "serve" ]
+CMD [ "--host=0.0.0.0" ]
+
+FROM php:7.4-fpm-alpine
+
+WORKDIR /var/www
+RUN rm -rf /var/www/html
+
+# Faz a cópia dos arquivos da pasta /var/www/laravel do estágio builder para o WORKDIR atual
+COPY --from=builder /var/www/laravel .
+
+# Permissão para o usuário www-data e o grupo www-data ser dono do conteúdo /var/www para poder gravar
+RUN chown -R www-data:www-data /var/www
+
+EXPOSE 9000
+CMD [ "php-fmp" ]
