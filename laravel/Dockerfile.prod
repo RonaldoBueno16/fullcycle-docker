@@ -29,8 +29,12 @@ RUN rm -rf /var/www/html
 # Faz a cópia dos arquivos da pasta /var/www/laravel do estágio builder para o WORKDIR atual
 COPY --from=builder /var/www/laravel .
 
+# Link simbolico para a pasta public ser direcionada para a HTML
+RUN ln -s public html
+
 # Permissão para o usuário www-data e o grupo www-data ser dono do conteúdo /var/www para poder gravar
 RUN chown -R www-data:www-data /var/www
 
 EXPOSE 9000
-CMD [ "php-fmp" ]
+
+CMD [ "php-fpm" ]
